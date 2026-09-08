@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>风控侦探 · 三关挑战 — 全场景风控仿真数据集</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0f;color:#e8e8e8;font-family:system-ui,-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;line-height:1.6;min-height:100vh}
+.wrap{max-width:680px;margin:0 auto;padding:24px 16px 60px}
+.badge{display:inline-block;background:#1e1e2e;border:1px solid #333;color:#8f9;padding:4px 12px;border-radius:99px;font-size:12px;margin-bottom:12px}
+h1{font-size:30px;font-weight:800;margin-bottom:6px}
+h1 .hl{color:#4ade80}
+h2{font-size:19px;font-weight:700;margin:8px 0 16px}
+p{color:#9a9aad;font-size:14px}
+.card{background:#13131c;border:1px solid #26263a;border-radius:14px;padding:18px;margin:14px 0}
+.tl{font-size:13px;color:#c8c8d8;border-left:2px solid #333;padding-left:12px;margin:8px 0}
+.tl .t{color:#666;font-size:12px;margin-right:6px}
+.tl .ph{color:#e8b64c;font-size:11px;border:1px solid #5a4a20;border-radius:4px;padding:0 4px;margin-right:6px}
+.btns{display:flex;gap:10px;margin-top:14px}
+.btn{flex:1;padding:14px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;border:1px solid #333;background:#1a1a26;color:#ccc;transition:all .15s}
+.btn:hover{border-color:#4ade80;color:#fff}
+.btn.block{background:#3d1216;border-color:#7a202a;color:#f88}
+.btn.block:hover{background:#5a1a22;border-color:#c33}
+.btn.pass{background:#0f2418;border-color:#1f6a3a;color:#8f9}
+.btn.pass:hover{background:#163322;border-color:#4ade80}
+.feedback{display:none;margin-top:14px;padding:12px 14px;border-radius:10px;font-size:14px}
+.feedback.right{background:#0f2418;border:1px solid #1f6a3a;color:#9fdcae}
+.feedback.wrong{background:#2a1216;border:1px solid #6a222a;color:#f0a8a8}
+.score-bar{display:flex;gap:4px;margin:10px 0}
+.score-dot{flex:1;height:6px;border-radius:3px;background:#222}
+.score-dot.on{background:#4ade80}
+.score-dot.off-wrong{background:#c33}
+.tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:6px;margin-right:6px;background:#1e1e2e;border:1px solid #333;color:#999}
+.final{text-align:center;padding:30px 16px}
+.final .big{font-size:52px;font-weight:800;color:#4ade80}
+.final .grade{font-size:18px;margin:10px 0}
+.cta{background:linear-gradient(135deg,#4ade80,#16a34a);color:#0a0a0a;border:none;padding:16px 28px;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;margin-top:16px;width:100%}
+.progress{font-size:12px;color:#666;text-align:center;margin:20px 0 4px}
+.hidden{display:none}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td{padding:6px 8px;border-bottom:1px solid #1e1e2e;color:#c8c8d8}
+td:first-child{color:#777;width:40%}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+
+<!-- 开场 -->
+<div id="intro">
+  <div class="badge">🎬 全场景风控仿真数据集 · 互动体验</div>
+  <h1>风控侦探 · <span class="hl">三关挑战</span></h1>
+  <p>你是刚入职的风控工程师。下面 8 个真实场景切片，全部来自我们的合成数据集
+  （金融 / 网络安全 / 保险 三条产品线）。<br><br>
+  凭你的肉眼和直觉，判断每一单：<b style="color:#e8e8e8">放行，还是拦截？</b><br><br>
+  答完你会看到：你的「肉眼识别率」 vs 我们数据训练出的模型基线。
+  这就是数据的价值。</p>
+  <button class="cta" onclick="start()">开始挑战 →</button>
+</div>
+
+<!-- 游戏 -->
+<div id="game" class="hidden">
+  <div class="progress" id="progText"></div>
+  <h2 id="qTitle"></h2>
+  <div id="qBody"></div>
+  <div class="btns">
+    <button class="btn pass" onclick="answer('pass')" id="btnPass">🟢 放行</button>
+    <button class="btn block" onclick="answer('block')" id="btnBlock">🔴 拦截</button>
+  </div>
+  <div class="feedback" id="fb"></div>
+  <div class="score-bar" id="scoreBar"></div>
+  <button class="cta hidden" id="nextBtn" onclick="next()">下一题 →</button>
+</div>
+
+<!-- 结局 -->
+<div id="final" class="hidden">
+  <div class="final">
+    <p>🎬 挑战结束</p>
+    <div class="big" id="finalScore"></div>
+    <div class="grade" id="finalGrade"></div>
+    <div class="card" id="finalCompare" style="text-align:left"></div>
+    <div class="card" style="text-align:left">
+      <b style="color:#e8e8e8">📦 三条产品线 · 完整版规格</b>
+      <table>
+        <tr><td>金融风控</td><td>10万客户 · 167.6万事件 · 特征宽表 · AUC 0.840</td></tr>
+        <tr><td>网络安全</td><td>10万端点 · 893.8万事件 · L3攻击链+L4对抗 · AUC 0.892</td></tr>
+        <tr><td>保险反欺诈</td><td>10万保单 · 61万事件 · L3欺诈链 · AUC 0.937</td></tr>
+      </table>
+      <p style="margin-top:10px">需要完整版 → 直接联系索取（注明来意）<br>
+      📧 fang02464@gmail.com ｜ 💬 微信扫码</p>
+      <img src="../assets/wechat_qr.jpg" alt="微信" style="width:120px;border-radius:8px;margin-top:10px">
+    </div>
+    <button class="cta" onclick="location.href='https://github.com/Yang0000Wu/credit-fraud-simulation-data'">📦 回仓库看数据 →</button>
+  </div>
+</div>
+
+</div>
+<script>
+/* ===== 题目数据（全部取自仓库样本 CSV 真实切片） ===== */
+var QUESTIONS = [
+  /* —— 第一关：金融风控 —— */
+  {
+    gate: "第一关 · 金融风控",
+    title: "凌晨 0 点，一笔消费贷申请进来了",
+    story: `<table>
+      <tr><td>申请人年龄</td><td>52 岁</td></tr>
+      <tr><td>月收入 / 申请金额</td><td>¥9,054 / ¥19,535</td></tr>
+      <tr><td>信用评分</td><td>447（偏低）</td></tr>
+      <tr><td>设备使用天数</td><td>177 天（无模拟器/越狱）</td></tr>
+      <tr><td>IP 类型 / 地址一致性</td><td>住宅 IP / 与申报城市一致</td></tr>
+      <tr><td>申请时刻</td><td><b style="color:#f88">凌晨 00:12</b></td></tr>
+    </table>
+    <p style="margin-top:8px;font-size:12px;color:#777">提示：正常客户会在凌晨申请贷款吗？</p>`,
+    answer: "block",
+    why: "身份冒用。52 岁申请人凌晨 0 点申请、信用分异常偏低——这是盗用他人身份在非活跃时段突击申请。拦截正确。真实数据里这类欺诈的申请时刻、信用分与设备行为是联合信号，单看 IP 一致性反而会漏。"
+  },
+  {
+    gate: "第一关 · 金融风控",
+    title: "IP 在上海，申报城市是北京——可疑？",
+    story: `<table>
+      <tr><td>申请人年龄</td><td>31 岁</td></tr>
+      <tr><td>月收入 / 申请金额</td><td>¥6,594 / ¥18,770</td></tr>
+      <tr><td>信用评分</td><td>475</td></tr>
+      <tr><td>设备使用天数</td><td>127 天</td></tr>
+      <tr><td>IP 类型</td><td>住宅 IP</td></tr>
+      <tr><td>申报城市 vs IP 城市</td><td><b style="color:#e8b64c">上海市 vs 北京市（不一致）</b></td></tr>
+      <tr><td>申请时刻</td><td>20:00</td></tr>
+    </table>
+    <p style="margin-top:8px;font-size:12px;color:#777">提示：地址不一致=欺诈？还是出差？</p>`,
+    answer: "pass",
+    why: "正常客户。IP 与申报城市不一致是出差/旅行常见现象，单靠这一个特征拦截会误杀正常用户——真实风控的误杀率红线就是这么来的。我们的数据里 normal 样本自带这类「灰区噪声」，模型必须学会区分。放行正确。"
+  },
+  /* —— 第二关：网络安全 —— */
+  {
+    gate: "第二关 · 网络安全",
+    title: "一个端点的时间线（30 天窗口内）",
+    story: `<div class="tl"><span class="ph">recon</span><span class="t">07-25 00:08</span>账号枚举尝试（来自陌生 IP）</div>
+    <div class="tl"><span class="ph">initial</span><span class="t">07-25 20:08~20:50</span>连续 11 次暴力尝试登录 → <b style="color:#f88">爆破成功</b></div>
+    <div class="tl"><span class="ph">privesc</span><span class="t">07-25 21:08</span>本地提权（创建服务）</div>
+    <div class="tl"><span class="ph">persist</span><span class="t">07-25 22:08</span>添加隐藏后门账号</div>
+    <div class="tl"><span class="ph">lateral</span><span class="t">07-25 22:08~23:08</span>RDP 横向移动到 GIT-SRV01、MAIL-SRV01</div>
+    <div class="tl"><span class="ph">cover</span><span class="t">07-26 00:08</span>关闭安全审计日志</div>
+    <p style="margin-top:8px;font-size:12px;color:#777">提示：这是一条完整的 MITRE ATT&CK 攻击链吗？</p>`,
+    answer: "block",
+    why: "暴力破解完整攻击链：枚举→爆破→提权→后门→横向→清日志，ATT&CK 六阶段一步不缺。拦截正确。这种链式标注正是 L3 数据的核心——买家可以用它训练端到端检测模型，而不是只能做单点规则。"
+  },
+  {
+    gate: "第二关 · 网络安全",
+    title: "另一个端点：MFA 都拦住了，还有问题吗？",
+    story: `<div class="tl"><span class="ph">deliver</span><span class="t">07-12 16:38</span>收到钓鱼邮件（伪造寄件人）</div>
+    <div class="tl"><span class="ph">exploit</span><span class="t">07-12 22:38</span>点击钓鱼链接并输入凭据</div>
+    <div class="tl"><span class="ph">exploit</span><span class="t">07-12 22:44</span><b style="color:#e8b64c">异常 MFA 尝试被拒（异地设备）</b></div>
+    <div class="tl"><span class="ph">persist</span><span class="t">07-14 03:38</span>创建邮件转发规则（投递至外部邮箱）</div>
+    <p style="margin-top:8px;font-size:12px;color:#777">提示：MFA 把攻击者挡住了，安全了吗？</p>`,
+    answer: "block",
+    why: "仍然被攻陷。MFA 挡住了直接登录，但攻击者改用「邮件转发规则」间接窃取邮件内容——这是真实的对抗变体（L4 样本），绕过手法专门用来测试模型的鲁棒性。拦截正确。"
+  },
+  {
+    gate: "第二关 · 网络安全",
+    title: "这个员工下了「来源不明安装包」——抓不抓？",
+    story: `<div class="tl"><span class="t">07-02 11:07</span>下载文档/更新包 12MB</div>
+    <div class="tl"><span class="t">07-02 11:29</span>密码错误自动重试</div>
+    <div class="tl"><span class="t">07-03 11:55</span><b style="color:#e8b64c">下载来源不明安装包</b></div>
+    <div class="tl"><span class="t">07-03 14:31</span>下载文档/更新包 17MB</div>
+    <div class="tl"><span class="t">07-07 10:23</span>下载文档/更新包 29MB</div>
+    <p style="margin-top:8px;font-size:12px;color:#777">提示：30 天内无任何后续异常外联。</p>`,
+    answer: "pass",
+    why: "安全。下载了可疑安装包但从未运行（无脚本执行、无外联心跳、无后续链事件）——这是典型「灰区噪声」，真实企业里每天都有员工误下载。只凭单事件拦截会误杀正常办公。放行正确。我们的 normal 样本刻意注入这类行为，训练出的模型才分得清真假。"
+  },
+  /* —— 第三关：保险反欺诈 —— */
+  {
+    gate: "第三关 · 保险反欺诈",
+    title: "同一路口，两个月内两次「对方全责」",
+    story: `<div class="tl"><span class="ph">stage</span><span class="t">02-24</span>出险报案：建设路口变道刮碰，对方全责 · 第1次</div>
+    <div class="tl"><span class="ph">inflate</span><span class="t">03-04</span>提交理赔：车衣损失 ¥4,777</div>
+    <div class="tl"><span class="ph">cashout</span><span class="t">03-08</span>快赔赔付 ¥4,777</div>
+    <div class="tl"><span class="ph">stage</span><span class="t">06-03</span>出险报案：<b style="color:#f88">同一路口</b>变道刮碰，对方全责 · 第2次</div>
+    <div class="tl"><span class="ph">inflate</span><span class="t">06-09</span>提交理赔：车衣损失 ¥3,362</div>
+    <div class="tl"><span class="ph">cashout</span><span class="t">06-11</span>快赔赔付 ¥3,362</div>
+    <p style="margin-top:8px;font-size:12px;color:#777">提示：变道刮碰=对方全责，这是路权规则。</p>`,
+    answer: "block",
+    why: "碰瓷惯犯。同一路段、同一手法（变道刮碰无责方）、反复小额快赔、每次都报高价车衣——与真实判决案例（中山张某 3 年 28 次）完全同构。拦截正确。这种剧本直接从公安部通报的真实案件学来，训练反碰瓷模型一抓一个准。"
+  },
+  {
+    gate: "第三关 · 保险反欺诈",
+    title: "¥20,000 医疗发票，但税务平台查无此票",
+    story: `<div class="tl"><span class="ph">stage</span><span class="t">11-20</span>出险报案（门诊费用/意外受伤）</div>
+    <div class="tl"><span class="ph">fabricate</span><span class="t">11-26</span><b style="color:#f88">发票验真失败（发票号在税务平台查无）</b></div>
+    <div class="tl"><span class="ph">fabricate</span><span class="t">11-29</span>提交发票 ¥20,000（伪造单据）</div>
+    <div class="tl"><span class="ph">cover</span><span class="t">12-10</span>因发票验真失败拒赔</div>
+    <p style="margin-top:8px;font-size:12px;color:#777">提示：系统已经拒赔了——这单算骗保吗？</p>`,
+    answer: "block",
+    why: "伪造单据骗保（被识破）。发票号在税务平台查无=假发票，这是真实稽查的第一道关卡。系统拒赔了，但它仍是骗保未遂——数据里保留完整「伪造→识破→拒赔」闭环，训练核赔模型识别未遂欺诈同样重要。拦截正确。"
+  },
+  {
+    gate: "第三关 · 保险反欺诈",
+    title: "一个爱投诉的客户，正常吗？",
+    story: `<div class="tl"><span class="t">01-14</span>投诉理赔进度缓慢</div>
+    <div class="tl"><span class="t">09-25</span>提交投保申请（健康险）</div>
+    <div class="tl"><span class="t">10-04</span>缴纳保费 ¥898</div>
+    <div class="tl"><span class="t">10-10</span>保单签发（保额 ¥168,263）</div>
+    <p style="margin-top:8px;font-size:12px;color:#777">提示：24 个月内无任何出险报案。</p>`,
+    answer: "pass",
+    why: "正常客户。投诉理赔慢是情绪行为不是欺诈信号；投保后长期无出险恰恰是好客户画像。放行正确。正常样本里的「灰区行为」（投诉/延迟报案）保证模型不会把急性子的好客户误杀。"
+  }
+];
+
+var idx = 0, score = 0, answered = false, wrongList = [];
+
+function $(id){return document.getElementById(id)}
+
+function start(){
+  $("intro").classList.add("hidden");
+  $("game").classList.remove("hidden");
+  render();
+}
+function render(){
+  var q = QUESTIONS[idx];
+  answered = false;
+  $("progText").textContent = q.gate + " · 第 " + (idx+1) + " / " + QUESTIONS.length + " 题 · 侦探分 " + score;
+  $("qTitle").textContent = q.title;
+  $("qBody").innerHTML = '<div class="card">' + q.story + "</div>";
+  $("fb").className = "feedback";
+  $("fb").style.display = "none";
+  $("nextBtn").classList.add("hidden");
+  $("btnPass").disabled = false; $("btnBlock").disabled = false;
+  renderScoreBar();
+}
+function renderScoreBar(){
+  var bar = $("scoreBar");
+  bar.innerHTML = "";
+  for (var i=0;i<QUESTIONS.length;i++){
+    var d = document.createElement("div");
+    d.className = "score-dot" + (i<idx ? (wrongList[i] ? " off-wrong" : " on") : "");
+    bar.appendChild(d);
+  }
+}
+function answer(choice){
+  if (answered) return;
+  answered = true;
+  $("btnPass").disabled = true; $("btnBlock").disabled = true;
+  var q = QUESTIONS[idx];
+  var right = choice === q.answer;
+  if (right) score++;
+  wrongList[idx] = !right;
+  var fb = $("fb");
+  fb.style.display = "block";
+  fb.className = "feedback " + (right ? "right" : "wrong");
+  fb.innerHTML = (right ? "✅ 判断正确 +1 侦探分<br>" : "❌ 判断失误<br>") + q.why;
+  $("nextBtn").textContent = (idx === QUESTIONS.length-1) ? "查看我的战绩 →" : "下一题 →";
+  $("nextBtn").classList.remove("hidden");
+  renderScoreBar();
+}
+function next(){
+  idx++;
+  if (idx >= QUESTIONS.length){ finish(); return; }
+  render();
+}
+function finish(){
+  $("game").classList.add("hidden");
+  $("final").classList.remove("hidden");
+  var pct = Math.round(score / QUESTIONS.length * 100);
+  $("finalScore").textContent = score + " / " + QUESTIONS.length;
+  var grade;
+  if (pct >= 87) grade = "🏆 顶级风控直觉——你的判断力已经接近模型水平";
+  else if (pct >= 62) grade = "🥈 不错的直觉——但还有 " + (QUESTIONS.length-score) + " 单你看走了眼";
+  else grade = "🔰 肉眼有盲区——这正是数据存在的意义";
+  $("finalGrade").textContent = grade;
+  $("finalCompare").innerHTML =
+    "<b style='color:#e8e8e8'>📊 你的肉眼识别率：" + pct + "%</b><br><br>" +
+    "而我们数据的模型基线（LightGBM · 时间切分口径）：<br><br>" +
+    "· 金融风控 <b style='color:#4ade80'>AUC 0.840</b><br>" +
+    "· 网络安全 <b style='color:#4ade80'>AUC 0.892</b><br>" +
+    "· 保险反欺诈 <b style='color:#4ade80'>AUC 0.937</b><br><br>" +
+    "<span style='font-size:13px;color:#9a9aad'>AUC=1.0 代表完美识别。你的肉眼在" + pct + "% 的判断题上没失误，但真实数据是十万级样本、链路级特征——机器学得比你细。想训练出上面这个水平的模型？完整版数据 10 万条起，上面每道题只是它的十万分之一。</span>";
+}
+</script>
+</body>
+</html>
