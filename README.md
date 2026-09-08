@@ -1,7 +1,12 @@
 # 全场景风控仿真数据集（金融 / 网络安全 / 保险）
 
 > 银行级风控模型训练与验证数据。**100% 合成，不含真实个人信息。**
-> 先玩一局体验数据价值 → 🎮 [风控侦探·三关挑战](https://yang0000wu.github.io/credit-fraud-simulation-data/game/)
+
+## 🎮 先玩一局：风控侦探 · 三关挑战
+
+8 个真实样本切片场景，扮演风控工程师亲手拦截。玩完看你的肉眼识别率 vs 模型基线——这就是数据的价值。
+
+**👉 https://yang0000wu.github.io/credit-fraud-simulation-data/game/**
 
 ---
 
